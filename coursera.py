@@ -3,7 +3,7 @@ from lxml import etree
 from openpyxl import Workbook
 import requests
 import random
-
+import json
 
 COURSES_URL = "https://www.coursera.org/sitemap~www~courses.xml"
 
@@ -14,33 +14,42 @@ def get_courses_list(sample_size=20):
     return [course_unit[0].text for course_unit in random.sample(list(root), sample_size)]
 
 
-def fetch_course_start_date(beatiful_soup_object):
-    js_data = beatiful_soup_object.find('script', {'type': 'application/ld+json'}).text
-    datetime = None
-    json_course = beatiful_soup_object.find('script', {'type': 'application/ld+json'}).text
-    if json_course:
-        datetime = beatiful_soup_object.loads(json_course)['hasCourseInstance'][0]['startDate']
-    return datetime
+def fetch_course_start_date(beautiful_soup_object):
+    start_date_footprint = 'startDate'
+    json_with_possible_start_date = beautiful_soup_object.find('script', {'type': 'application/ld+json'})
+    if json_with_possible_start_date and start_date_footprint in json_with_possible_start_date.text:
+        datetime = json.loads(json_with_possible_start_date.text)['hasCourseInstance'][0]['startDate']
+        return datetime
 
 
+def fetch_course_name(beautiful_soup_object):
+    course_name = beautiful_soup_object.find('div', {'class': 'title display-3-text'})
+    if course_name:
+        return course_name.text
+
+
+def fetch_course_language(beautiful_soup_object):
+    course_language = beautiful_soup_object.find('div', {'class': 'language-info'})
+    if course_language:
+        return course_language.text
+
+
+def fetch_course_rate(beautiful_soup_object):
+    course_rate = beautiful_soup_object.find('div', {'class': 'ratings-text bt3-visible-xs'})
+    if course_rate:
+        return course_rate.text
 
 
 def get_course_info(course_slug):  # название, язык, ближайшую дату начала, количество недель и среднюю оценку
     for course in course_slug:
         page = requests.get(course).content
-        soup = BeautifulSoup(page, 'html.parser')
-        course_name = soup.find('div', {'class': 'title display-3-text'})
-        course_rate = soup.find('div', {'class': 'ratings-text bt3-visible-xs'})
-        course_language = soup.find('div', {'class': 'language-info'})
-        course_duration = len(soup.find_all('div', {'class': 'week'}))
-        course_start_date = fetch_course_start_date()
-
-    return course_name, course_language, course_start_date ,course_duration, course_rate
-
-
-def get_course_start(course_object):
-    class_to_store_lang_info = "basic-info-table bt3-table bt3-table-striped bt3-table-bordered bt3-table-responsive"
-    pass
+        soup_object = BeautifulSoup(page, 'html.parser')
+        course_name = fetch_course_name(soup_object)
+        course_rate = fetch_course_rate(soup_object)
+        course_language = fetch_course_language(soup_object)
+        course_duration = len(soup_object.find_all('div', {'class': 'week'}))
+        course_start_date = fetch_course_start_date(soup_object)
+        print(course_name, course, '    ',course_language, course_start_date, course_duration, course_rate)
 
 
 def output_courses_info_to_xlsx():
@@ -55,5 +64,5 @@ def output_courses_info_to_xlsx():
 
 
 if __name__ == '__main__':
-    print(get_courses_list())
-    output_courses_info_to_xlsx()
+    print(get_course_info(get_courses_list()))
+    # output_courses_info_to_xlsx()

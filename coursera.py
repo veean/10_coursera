@@ -40,29 +40,33 @@ def fetch_course_rate(beautiful_soup_object):
         return course_rate.text
 
 
-def get_course_info(course_slug):  # название, язык, ближайшую дату начала, количество недель и среднюю оценку
+def get_course_info(course_slug):
     for course in course_slug:
         page = requests.get(course).content
         soup_object = BeautifulSoup(page, 'html.parser')
         course_name = fetch_course_name(soup_object)
-        course_rate = fetch_course_rate(soup_object)
         course_language = fetch_course_language(soup_object)
-        course_duration = len(soup_object.find_all('div', {'class': 'week'}))
         course_start_date = fetch_course_start_date(soup_object)
-        print(course_name, course, '    ',course_language, course_start_date, course_duration, course_rate)
+        course_duration = len(soup_object.find_all('div', {'class': 'week'}))
+        course_rate = fetch_course_rate(soup_object)
+        return course_name, course, course_language, course_start_date, course_duration, course_rate
 
 
-def output_courses_info_to_xlsx():
+def output_courses_info_to_xlsx(courses_tuple, filepath='C:\\Users\\Vadim\\Desktop\\123.xlsx'):
     courses_workbook = Workbook()
     workbook_page = courses_workbook.active
     column_names = ['Course name', 'URL', 'Language', 'Start date', 'Duration', 'Average rating']
 
-    for index, name in enumerate(column_names):
-        workbook_page.cell(row=1, column=index+1).value = name
+    for index, name in enumerate(column_names,1):
+        workbook_page.cell(row=1, column=index).value = name
 
-    courses_workbook.save('C:\\Users\\Vadim\\Desktop\\123.xlsx')
+    for position, course_info in enumerate(courses_tuple, 2):
+        for fetched_parameter_id, fetched_parameter in enumerate(course_info, 1):
+            workbook_page.cell(row=position, column=fetched_parameter_id).value = fetched_parameter
+
+    courses_workbook.save(filepath)
 
 
 if __name__ == '__main__':
-    print(get_course_info(get_courses_list()))
-    # output_courses_info_to_xlsx()
+    # print(get_course_info(get_courses_list()))
+    output_courses_info_to_xlsx(get_course_info(get_courses_list()))

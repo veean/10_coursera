@@ -15,7 +15,7 @@
 
 Информация в консоли : 
 
-    $python coursera.py C:\\Users\\root\\Desktop\\123.xlsx
+    $python coursera.py coursera.xlsx
      Collecting information about courses... wait a minute please...
      File saved to coursera.xlsx
 

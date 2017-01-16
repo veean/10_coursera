@@ -20,8 +20,7 @@ def fetch_url_content(url):
     return requests.get(url).content
 
 
-def get_courses_list(sample_size=20):
-    courses_raw_info = fetch_url_content(COURSES_URL)
+def get_courses_list(courses_raw_info, sample_size=20):
     root = etree.fromstring(courses_raw_info)
     return [course_unit[0].text for course_unit in random.sample(list(root), sample_size)]
 
@@ -51,21 +50,17 @@ def fetch_course_language(beautiful_soup_object):
         return course_language.text
 
 
-def get_course_info(courses_links):
-    courses_list = []
-    for course in courses_links:
-        page = fetch_url_content(course)
-        soup_object = BeautifulSoup(page, 'html.parser')
+def get_course_info(course_page):
+        soup_object = BeautifulSoup(course_page, 'html.parser')
         duration = soup_object.find_all('div', {'class': 'week'})
-
         course_name = fetch_course_name(soup_object)
         course_rate = fetch_course_rate(soup_object)
         course_language = fetch_course_language(soup_object)
         course_duration = len(duration) if duration else None
         course_start_date = fetch_course_start_date(soup_object)
+        course_url = soup_object.find('meta', property='og:url')['content']
 
-        courses_list.append((course_name, course, course_language, course_start_date, course_duration, course_rate))
-    return courses_list
+        return course_name, course_url, course_language, course_start_date, course_duration, course_rate
 
 
 def output_courses_info_to_xlsx(courses_list, filepath):
@@ -87,5 +82,10 @@ def output_courses_info_to_xlsx(courses_list, filepath):
 
 if __name__ == '__main__':
     print('Collecting information about courses... wait a minute please...')
-    if output_courses_info_to_xlsx(get_course_info(get_courses_list()), get_path_argument()):
+
+    courses_links = get_courses_list(fetch_url_content(COURSES_URL))
+    fetched_pages = [fetch_url_content(url) for url in courses_links]
+    parsed_courses_info = [get_course_info(page) for page in fetched_pages]
+
+    if output_courses_info_to_xlsx(parsed_courses_info, get_path_argument()):
         print('File saved to {}'.format(get_path_argument()))

@@ -20,7 +20,7 @@ def fetch_url_content(url):
     return requests.get(url).content
 
 
-def get_courses_list(courses_raw_info, sample_size=20):
+def get_courses_sample(courses_raw_info, sample_size=20):
     root = etree.fromstring(courses_raw_info)
     return [course_unit[0].text for course_unit in random.sample(list(root), sample_size)]
 
@@ -83,7 +83,7 @@ def output_courses_info_to_xlsx(courses_list, filepath):
 if __name__ == '__main__':
     print('Collecting information about courses... wait a minute please...')
 
-    courses_links = get_courses_list(fetch_url_content(COURSES_URL))
+    courses_links = get_courses_sample(fetch_url_content(COURSES_URL))
     fetched_pages = [fetch_url_content(url) for url in courses_links]
     parsed_courses_info = [get_course_info(page) for page in fetched_pages]
 
